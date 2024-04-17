@@ -131,7 +131,7 @@ All to Cart
     {% for handle in product_handles %}
     {% assign product = all_products[handle] %}
         {% if forloop.first %}
-        <input type="hidden" name="id" value="{{ product.variants.first.id }}">
+        <input type="hidden" name="id" value="{{ product.variants.first.id }}" id="{{ product.id }}">
         {% else %}
             {% if product.available %}
                 <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}" id="{{ product.id }}">
@@ -151,6 +151,7 @@ All to Cart JS
     selectors.forEach((el, idx) => {
         el.addEventListener('change', function() {
         var selectedValue = this.value;
+        console.log(selectedValue)
         var selectId = this.id.split('-')[1];
         document.getElementById(selectId).value = selectedValue;
     })
