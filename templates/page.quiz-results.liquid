@@ -102,7 +102,7 @@ Product Grid
                     {% else  %}
                         <input type="hidden" name="id" value="{{ product.variants.first.id }}">
                     {% endif %}
-                    <button class="button button--full-width button--secondary" type="submit">Add to Cart</button>
+                    <button {% if product.available == false %} disabled {% endif %}class="button button--full-width button--secondary" type="submit">Add to Cart</button>
                 </form>
             </div>
         {% else %}
@@ -116,7 +116,7 @@ Product Grid
                     {% else  %}
                     <input type="hidden" name="id" value="{{ product.variants.first.id }}">
                 {% endif %}
-                <button class="button button--full-width button--secondary" type="submit">Add to Cart</button>
+                <button {% if product.available == false %} disabled {% endif %} class="button button--full-width button--secondary" type="submit">Add to Cart</button>
             </form>
         {% endif %}
     </div>
@@ -131,8 +131,10 @@ All to Cart
     {% assign product = all_products[handle] %}
         {% if forloop.first %}
         <input type="hidden" name="id" value="{{ product.variants.first.id }}">
-        {%  else %}
-        <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}">
+        {% else %}
+            {% if product.available %}
+                <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}">
+            {% endif %}
         {% endif %} 
     {% endfor %}
   <button class="button button--primary all-button" type="submit" name="add">Add All to Cart</button>
@@ -151,7 +153,9 @@ All to Cart JS
             {% if forloop.first %}
         { quantity: 1, id: formData.get('id') }, 
             {%  else %} 
+            {% if product.available %}
         { quantity: 1, id: formData.get('properties[_bundle{{ forloop.index |  minus: 1 }}]') }, 
+            {% endif %} 
             {% endif %} 
             
       {% endfor %}
