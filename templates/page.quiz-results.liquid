@@ -95,7 +95,7 @@ Product Grid
                 <br>
                 <form action="/cart/add" method="post" enctype="multipart/form-data">
                     {% if product.variants.size > 1 %}
-                        <select type="hidden" name="id">
+                        <select id="sel-{{ product.id }}" class="var-select" type="hidden" name="id">
                             {% for variant in product.variants %}
                                 <option value="{{ variant.id }}">{{ variant.title }}</option>
                             {% endfor %}
@@ -109,7 +109,7 @@ Product Grid
         {% else %}
             <form action="/cart/add" method="post" enctype="multipart/form-data">
             {% if product.variants.size > 1 %}
-                <select type="hidden" name="id">
+                <select id="sel-{{ product.id }}" class="var-select" type="hidden" name="id">
                     {% for variant in product.variants %}
                         <option value="{{ variant.id }}">{{ variant.title }}</option>
                     {% endfor %}
@@ -134,7 +134,7 @@ All to Cart
         <input type="hidden" name="id" value="{{ product.variants.first.id }}">
         {% else %}
             {% if product.available %}
-                <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}">
+                <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}" id="{{ product.id }}">
             {% endif %}
         {% endif %} 
     {% endfor %}
@@ -145,7 +145,20 @@ All to Cart
 All to Cart JS
 {% endcomment %}
 <script>
-  document.querySelector('form[action="/cart/add"]#all').onsubmit = function(e) {
+
+    // Sets inputs for products with selectable variants in hidden #all form 
+    let selectors = document.querySelectorAll('.var-select')
+    selectors.forEach((el, idx) => {
+        el.addEventListener('change', function() {
+        var selectedValue = this.value;
+        var selectId = this.id.split('-')[1];
+        document.getElementById(selectId).value = selectedValue;
+    })
+    
+    });
+
+    // api action for multiple product add to cart 
+    document.querySelector('form[action="/cart/add"]#all').onsubmit = function(e) {
     e.preventDefault();
 
     const formData = new FormData(this);
@@ -166,16 +179,16 @@ All to Cart JS
     ];
 
     fetch('/cart/add.js', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
       },
       body: JSON.stringify({ items: itemsToAdd })
     })
     .then(response => response.json())
     .then(cart => {
-      console.log('Items added', cart);
-      window.location.href = '/cart';
+        console.log('Items added', cart);
+        window.location.href = '/cart';
     })
     .catch(error => console.error('Error adding items:', error));
   };
