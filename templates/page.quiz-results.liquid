@@ -1,11 +1,175 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+
+{{ 'template-collection.css' | asset_url | stylesheet_tag }}
+
+{{ 'component-card.css' | asset_url | stylesheet_tag }}
+{{ 'component-price.css' | asset_url | stylesheet_tag }}
+
+{{ 'component-slider.css' | asset_url | stylesheet_tag }}
+{{ 'quiz-results.css' | asset_url | stylesheet_tag }}
+
+{% comment %} 
+Gather parmas
+{% endcomment %}
+{%- capture contentForQuerystring -%}{{ content_for_header }}{%- endcapture -%}
+    {%- assign pageUrl = contentForQuerystring
+      | split: '"pageurl":"'
+      | last
+      | split: '"'
+      | first
+      | split: '.myshopify.com'
+      | last
+      | replace: '\/', '/'
+      | replace: '%2C', ','
+      | replace: '\u0026', '&'
+    -%}
+    {%  assign params = pageUrl |  split: '?' | last |  split: '&' %}
+
+{% comment %} 
+Variable Assignment
+{% endcomment %}
+    {% for param in params %}
+        {% if param contains "product_handles" %}
+            {% assign product_handles = param |  split: '=' |  last |  split: ","%}
+        {% endif %}
+        {% if param contains "hide_oos" %}
+            {% assign hide_oos = param |  split: '=' |  last %}
+        {% endif %}
+        {% if param contains "show_hero" %}
+            {% assign show_hero = param |  split: '=' |  last%}
+        {% endif %}
+        {% if param contains "row_length" %}
+            {% assign row_length = param |  split: '=' |  last | default: 3 %}
+        {% endif %}
+    {% endfor %}
+
+{% comment %} 
+Header
+{% endcomment %}
+<div id="quiz-header">
+    <h1 id='results-title'> {{ customer.name }} Quiz Results</h1>
+    <h3>Based on what you've told us, we think you'd love these!!</h3>
+</div>
+
+<div class="product-grid" style="grid-template-columns:{% for i in (1..row_length) %} 1fr{% endfor %};">
+
+{% comment %}
+Product Grid
+{% endcomment %}
+{% for handle in product_handles %}
+
+    {% comment %}
+    Limit to 9 products
+    {% endcomment %}
+    {% if forloop.index == 10 %}
+    {%  break  %} 
+    {% endif %}
+    {% assign product = all_products[handle] %}
+
+    {% comment %}
+    OOS Toggle
+    {% endcomment %}
+    {% if hide_oos == "true" and product.available == false %}
+        {% continue %}
+    {% endif %}
+
+    {% comment %}
+    Grid Items
+    {% endcomment %}
+    <div class="product-item grid_item{% if forloop.first and show_hero == 'true' %}
+        hero-product{% endif %}" >
+
+        {% render 'card-product',
+        card_product: product,
+        show_secondary_image: true,
+        lazy_load: false,
+        %}
+
+        {% if forloop.first and show_hero == 'true' %}
+            <div class="hero-text">
+                This is a highly recommended product for you.
+                <br>
+                <br>
+                More suggestions below!
+                <br>
+                <br>
+                <form action="/cart/add" method="post" enctype="multipart/form-data">
+                    {% if product.variants.size > 1 %}
+                        <select type="hidden" name="id">
+                            {% for variant in product.variants %}
+                                <option value="{{ variant.id }}">{{ variant.title }}</option>
+                            {% endfor %}
+                        </select>
+                    {% else  %}
+                        <input type="hidden" name="id" value="{{ product.variants.first.id }}">
+                    {% endif %}
+                    <button class="button button--full-width button--secondary" type="submit">Add to Cart</button>
+                </form>
+            </div>
+        {% else %}
+            <form action="/cart/add" method="post" enctype="multipart/form-data">
+            {% if product.variants.size > 1 %}
+                <select type="hidden" name="id">
+                    {% for variant in product.variants %}
+                        <option value="{{ variant.id }}">{{ variant.title }}</option>
+                    {% endfor %}
+                    </select>
+                    {% else  %}
+                    <input type="hidden" name="id" value="{{ product.variants.first.id }}">
+                {% endif %}
+                <button class="button button--full-width button--secondary" type="submit">Add to Cart</button>
+            </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% comment %} 
+All to Cart
+{% endcomment %}
+<form id="all" action="/cart/add" method="post" enctype="multipart/form-data">
+    {% for handle in product_handles %}
+    {% assign product = all_products[handle] %}
+        {% if forloop.first %}
+        <input type="hidden" name="id" value="{{ product.variants.first.id }}">
+        {%  else %}
+        <input type="hidden" name="properties[_bundle{{ forloop.index |  minus: 1 }}]" value="{{ product.variants.first.id }}">
+        {% endif %} 
+    {% endfor %}
+  <button class="button button--primary all-button" type="submit" name="add">Add All to Cart</button>
+</form>
+
+{% comment %} 
+All to Cart JS
+{% endcomment %}
+<script>
+  document.querySelector('form[action="/cart/add"]#all').onsubmit = function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const itemsToAdd = [
+        {% for handle in product_handles %}
+            {% if forloop.first %}
+        { quantity: 1, id: formData.get('id') }, 
+            {%  else %} 
+        { quantity: 1, id: formData.get('properties[_bundle{{ forloop.index |  minus: 1 }}]') }, 
+            {% endif %} 
+            
+      {% endfor %}
+    ];
+
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ items: itemsToAdd })
+    })
+    .then(response => response.json())
+    .then(cart => {
+      console.log('Items added', cart);
+      window.location.href = '/cart';
+    })
+    .catch(error => console.error('Error adding items:', error));
+  };
+</script>
+
