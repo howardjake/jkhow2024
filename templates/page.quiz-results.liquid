@@ -63,6 +63,7 @@ Product Grid
     {% if forloop.index == 10 %}
     {%  break  %} 
     {% endif %}
+
     {% assign product = all_products[handle] %}
 
     {% comment %}
@@ -150,6 +151,9 @@ All to Cart JS
     const formData = new FormData(this);
     const itemsToAdd = [
         {% for handle in product_handles %}
+
+        {% assign product = all_products[handle] %}
+
             {% if forloop.first %}
         { quantity: 1, id: formData.get('id') }, 
             {%  else %} 
