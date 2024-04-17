@@ -12,17 +12,17 @@ Gather parmas
 {% endcomment %}
 {%- capture contentForQuerystring -%}{{ content_for_header }}{%- endcapture -%}
     {%- assign pageUrl = contentForQuerystring
-      | split: '"pageurl":"'
-      | last
-      | split: '"'
+    | split: '"pageurl":"'
+    | last
+    | split: '"'
       | first
       | split: '.myshopify.com'
       | last
       | replace: '\/', '/'
       | replace: '%2C', ','
       | replace: '\u0026', '&'
-    -%}
-    {%  assign params = pageUrl |  split: '?' | last |  split: '&' %}
+      -%}
+      {%  assign params = pageUrl |  split: '?' | last |  split: '&' %}
 
 {% comment %} 
 Variable Assignment
